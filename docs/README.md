@@ -13,6 +13,7 @@
 - [example](https://github.com/golang-standards/project-layout/blob/master/README_es.md)
 
 ## regular expression
+- https://golang.org/pkg/regexp/syntax/
 
 
 
