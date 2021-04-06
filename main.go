@@ -3,10 +3,12 @@ package main
 import (
 	"fmt"
 
-	exp "main/expression"
+	exp "main/pkg/core"
 )
 
 func main() {
-	parser := exp.NewParser()
-	fmt.Println(string(parser.Parse("a + b")))
+
+	result := exp.Parse("a + b")
+	xType := fmt.Sprintf("%v", result)
+	fmt.Println(string(xType))
 }
