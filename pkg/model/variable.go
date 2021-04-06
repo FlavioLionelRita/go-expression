@@ -6,27 +6,18 @@ import (
 
 type Variable struct {
 	name    string
-	names   []string
 	context core.Context
 }
 
-// func (p *Variable) Value() interface{} {
-// 	var _value = p.context
-// 	length := len(p.names)
-// 	for i := 0; i < length; i++ {
-// 		if i == length -1 {
-// 			return _value[p.names[i]]
-// 		}else{
-// 			_value = _value[p.names[i]]
-// 		}
-
-// 	}
-// }
-
+func (p *Variable) Value() interface{} {
+	return p.context.Value(p.name)
+}
+func (p *Variable) SetValue(value interface{}) {
+	p.context.SetValue(p.name, value)
+}
 func (p *Variable) Name() string {
 	return p.name
 }
-
 func (p *Variable) Context() core.Context {
 	return p.context
 }
