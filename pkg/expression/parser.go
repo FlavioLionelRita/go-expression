@@ -1,19 +1,20 @@
-package core
+package expression
 
 import (
 	"main/pkg/helper"
 	"regexp"
 )
 
-type _Parser struct {
+type Parser struct {
+	manager        *ParserManager
 	chars          []byte
 	index          int
 	length         int
 	reAlphanumeric *regexp.Regexp
 }
 
-func NewParser(source string) *_Parser {
-	p := _Parser{}
+func NewParser(manager *ParserManager, source string) *Parser {
+	p := Parser{manager: manager}
 	p.chars = p.clear(source)
 	p.index = 0
 	p.length = len(p.chars)
@@ -21,12 +22,13 @@ func NewParser(source string) *_Parser {
 	return &p
 }
 
-func (p *_Parser) Parse() string {
+func (p *Parser) Parse() (IOperand, error) {
 	//TODO
-	return string(p.chars)
+	// return string(p.chars)
+	return nil, nil
 }
 
-func (p *_Parser) clear(source string) []byte {
+func (p *Parser) clear(source string) []byte {
 	length := len(source)
 	j := 0
 	var quotes byte
@@ -47,19 +49,19 @@ func (p *_Parser) clear(source string) []byte {
 	}
 	return result[:j]
 }
-func (p *_Parser) previous() byte {
+func (p *Parser) previous() byte {
 	return p.chars[p.index-1]
 }
-func (p *_Parser) current() byte {
+func (p *Parser) current() byte {
 	return p.chars[p.index]
 }
-func (p *_Parser) next() byte {
+func (p *Parser) next() byte {
 	return p.chars[p.index+1]
 }
-func (p *_Parser) end() bool {
+func (p *Parser) end() bool {
 	return p.index >= p.length
 }
-func (p *_Parser) priority(op string) int {
+func (p *Parser) priority(op string) int {
 	if helper.In(op, []string{"=", "+=", "-=", "*=", "/=", "%=", "**=", "//=", "&=", "|=", "^=", "<<=", ">>="}) {
 		return 1
 	}
@@ -80,7 +82,7 @@ func (p *_Parser) priority(op string) int {
 	}
 	return -1
 }
-func (p *_Parser) getValue() string {
+func (p *Parser) getValue() string {
 	buff := make([]byte, 50)
 	j := 0
 	for ; !p.end() && p.reAlphanumeric.Match([]byte{p.current()}); j++ {
@@ -93,7 +95,7 @@ func (p *_Parser) getValue() string {
 	}
 	return string(buff[:j])
 }
-func (p *_Parser) getOperator() string {
+func (p *Parser) getOperator() string {
 	if p.end() {
 		return ""
 	}

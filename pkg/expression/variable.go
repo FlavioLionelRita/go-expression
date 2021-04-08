@@ -1,12 +1,8 @@
-package model
-
-import (
-	core "main/pkg/core"
-)
+package expression
 
 type Variable struct {
 	name    string
-	context core.Context
+	context Context
 }
 
 func (p *Variable) Value() interface{} {
@@ -18,9 +14,9 @@ func (p *Variable) SetValue(value interface{}) {
 func (p *Variable) Name() string {
 	return p.name
 }
-func (p *Variable) Context() core.Context {
+func (p *Variable) Context() Context {
 	return p.context
 }
-func (p *Variable) SetContext(value core.Context) {
+func (p *Variable) SetContext(value Context) {
 	p.context = value
 }
