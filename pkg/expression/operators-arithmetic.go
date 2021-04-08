@@ -30,13 +30,13 @@ func (this *Addition) Value() (*Value, error) {
 	_type := helper.Max(oper1.Type(), oper2.Type())
 	switch _type {
 	case Type.Int:
-		return &Value{value: (oper1.value.(int) + oper2.value.(int)), _type: _type}, nil
+		return &Value{value: oper1.toInt() - oper2.toInt(), _type: _type}, nil
 	case Type.Float:
-		return &Value{value: (oper1.value.(float64) + oper2.value.(float64)), _type: _type}, nil
+		return &Value{value: oper1.toFloat() - oper2.toFloat(), _type: _type}, nil
 	case Type.String:
-		return &Value{value: (oper1.value.(string) + oper2.value.(string)), _type: _type}, nil
-	case Type.Boolean:
-		return &Value{value: (oper1.value.(bool) && oper2.value.(bool)), _type: _type}, nil
+		return &Value{value: oper1.toString() + oper2.toString(), _type: _type}, nil
+	case Type.Bool:
+		return &Value{value: oper1.toBool() && oper2.toBool(), _type: _type}, nil
 	default:
 		return nil, errors.New("invalid type for operator " + this.name)
 	}
@@ -58,9 +58,9 @@ func (this *Subtraction) Value() (*Value, error) {
 	_type := helper.Max(oper1.Type(), oper2.Type())
 	switch _type {
 	case Type.Int:
-		return &Value{value: (oper1.value.(int) - oper2.value.(int)), _type: _type}, nil
+		return &Value{value: oper1.toInt() - oper2.toInt(), _type: _type}, nil
 	case Type.Float:
-		return &Value{value: (oper1.value.(float64) - oper2.value.(float64)), _type: _type}, nil
+		return &Value{value: oper1.toFloat() - oper2.toFloat(), _type: _type}, nil
 	default:
 		return nil, errors.New("invalid type for operator " + this.name)
 	}

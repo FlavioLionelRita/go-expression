@@ -1,16 +1,16 @@
 package expression
 
 import (
+	"errors"
 	"main/pkg/helper"
-	"regexp"
+	"strings"
 )
 
 type Parser struct {
-	manager        *ParserManager
-	chars          []byte
-	index          int
-	length         int
-	reAlphanumeric *regexp.Regexp
+	manager *ParserManager
+	chars   []byte
+	index   int
+	length  int
 }
 
 func NewParser(manager *ParserManager, source string) *Parser {
@@ -18,17 +18,17 @@ func NewParser(manager *ParserManager, source string) *Parser {
 	p.chars = p.clear(source)
 	p.index = 0
 	p.length = len(p.chars)
-	p.reAlphanumeric, _ = regexp.Compile("p([a-zA-Z0-9_.]+)ch")
+
 	return &p
 }
 
-func (p *Parser) Parse() (IOperand, error) {
+func (this *Parser) Parse() (IOperand, error) {
 	//TODO
 	// return string(p.chars)
 	return nil, nil
 }
 
-func (p *Parser) clear(source string) []byte {
+func (this *Parser) clear(source string) []byte {
 	length := len(source)
 	j := 0
 	var quotes byte
@@ -49,72 +49,111 @@ func (p *Parser) clear(source string) []byte {
 	}
 	return result[:j]
 }
-func (p *Parser) previous() byte {
-	return p.chars[p.index-1]
+func (this *Parser) previous() byte {
+	return this.chars[this.index-1]
 }
-func (p *Parser) current() byte {
-	return p.chars[p.index]
+func (this *Parser) current() byte {
+	return this.chars[this.index]
 }
-func (p *Parser) next() byte {
-	return p.chars[p.index+1]
+func (this *Parser) next() byte {
+	return this.chars[this.index+1]
 }
-func (p *Parser) end() bool {
-	return p.index >= p.length
+func (this *Parser) end() bool {
+	return this.index >= this.length
 }
-func (p *Parser) priority(op string) int {
-	if helper.In(op, []string{"=", "+=", "-=", "*=", "/=", "%=", "**=", "//=", "&=", "|=", "^=", "<<=", ">>="}) {
-		return 1
-	}
-	if helper.In(op, []string{"&&", "||"}) {
-		return 2
-	}
-	if helper.In(op, []string{">", "<", ">=", "<=", "!=", "=="}) {
-		return 3
-	}
-	if helper.In(op, []string{"+", "-"}) {
-		return 4
-	}
-	if helper.In(op, []string{"*", "/"}) {
-		return 5
-	}
-	if helper.In(op, []string{"**", "//"}) {
-		return 6
-	}
-	return -1
+
+func (this *Parser) getExpression(operand1 *IOperand, operator *IOperator, _break string) *IOperand {
+	//TODO
+	return nil
 }
-func (p *Parser) getValue() string {
+func (this *Parser) getOperand() IOperand {
+	//TODO
+	return nil
+}
+func (this *Parser) priority(op string) byte {
+	return this.manager.priority(op)
+}
+
+func (this *Parser) getValue() string {
 	buff := make([]byte, 50)
 	j := 0
-	for ; !p.end() && p.reAlphanumeric.Match([]byte{p.current()}); j++ {
+	for ; !this.end() && this.manager.reAlphanumeric.Match([]byte{this.current()}); j++ {
 		if j >= 50 {
-			buff = append(buff, p.current())
+			buff = append(buff, this.current())
 		} else {
-			buff[j] = p.current()
+			buff[j] = this.current()
 		}
-		p.index++
+		this.index++
 	}
 	return string(buff[:j])
 }
-func (p *Parser) getOperator() string {
-	if p.end() {
+func (this *Parser) getOperator() string {
+	if this.end() {
 		return ""
 	}
 	op := ""
-	if p.index+2 < p.length {
-		triple := string([]byte{p.current(), p.next(), p.chars[p.index+2]})
-		if helper.In(triple, []string{"**=", "//=", "<<=", ">>="}) {
+	if this.index+2 < this.length {
+		triple := string([]byte{this.current(), this.next(), this.chars[this.index+2]})
+		if helper.In(triple, this.manager.tripleOperators) {
 			op = triple
 		}
 	}
-	if op == "" && p.index+1 < p.length {
-		double := string([]byte{p.current(), p.next()})
-		if helper.In(double, []string{"**", "//", ">=", "<=", "!=", "==", "+=", "-=", "*=", "/=", "%=", "&&", "||", "|=", "^=", "<<", ">>"}) {
+	if op == "" && this.index+1 < this.length {
+		double := string([]byte{this.current(), this.next()})
+		if helper.In(double, this.manager.doubleOperators) {
 			op = double
 		}
 	}
 	if op == "" {
-		op = string(p.current())
+		op = string(this.current())
 	}
-	p.index += len(op)
+	this.index += len(op)
 	return op
+}
+func (this *Parser) getString(char byte) string {
+	var sb strings.Builder
+	for !this.end() {
+		if this.current() == char {
+			if !((this.index+1 < this.length && this.next() == char) || (this.previous() == char)) {
+				break
+			}
+		}
+		sb.WriteByte(this.current())
+		this.index++
+	}
+	this.index++
+	return sb.String()
+}
+func (this *Parser) getArgs(end byte) []*IOperand {
+	endExpression := string([]byte{',', end})
+	var args []*IOperand
+	for !this.end() {
+		arg := this.getExpression(nil, nil, endExpression)
+		if arg != nil {
+			args = append(args, arg)
+		}
+		if this.previous() == end {
+			break
+		}
+	}
+	return args
+}
+func (this *Parser) getObject(end byte) (Object, error) {
+	var attributes []*KeyValue
+	for !this.end() {
+		name := this.getValue()
+		if this.current() == ':' {
+			this.index++
+		} else {
+			return Object{}, errors.New("attribute " + name + " without value")
+		}
+		value := this.getExpression(nil, nil, ",}")
+		attribute := KeyValue{name: name, value: *value}
+		attributes = append(attributes, &attribute)
+		if this.previous() == end {
+			this.index++
+			break
+		}
+	}
+	return Object{attributes: attributes}, nil
 }

@@ -2,18 +2,27 @@ package expression
 
 import (
 	"main/pkg/helper"
+	"regexp"
 )
 
 type ParserManager struct {
-	operators map[string]interface{}
-	functions map[string]interface{}
-	enums     map[string]interface{}
+	operators       map[string]interface{}
+	functions       map[string]interface{}
+	enums           map[string]interface{}
+	doubleOperators []string
+	tripleOperators []string
+	reAlphanumeric  *regexp.Regexp
+	reInt           *regexp.Regexp
+	reFloat         *regexp.Regexp
 }
 
 var singleton *ParserManager
 
 func init() {
 	singleton = &ParserManager{}
+	singleton.reAlphanumeric, _ = regexp.Compile("p([a-zA-Z0-9_.]+)ch")
+	singleton.reInt, _ = regexp.Compile("p([0-9]+)ch")
+	singleton.reFloat, _ = regexp.Compile("p([0-9]+(.[0-9]*)?|.[0-9]+)([eE][0-9]+)ch")
 	singleton.initOperator()
 	singleton.initFunctions()
 	singleton.initEnums()
@@ -40,6 +49,7 @@ func (this *ParserManager) Refresh() {
 func (this *ParserManager) AddOperator(key string, value interface{}) {
 	this.operators[key] = value
 }
+
 func (this *ParserManager) newOperator(key string, oper1 *IOperand, oper2 *IOperand) IOperator {
 	template := this.operators[key].(IOperator)
 	clone := helper.Clone(template).(IOperator)
