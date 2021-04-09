@@ -50,19 +50,24 @@ type IOperand interface {
 	Value() (*Value, error)
 }
 
+type IComposite interface {
+	operands() []*IOperand
+	getOperand(index int) *IOperand
+}
+
 type Operand struct {
 }
 
 type KeyValue struct {
 	name  string
-	value IOperand
+	value *IOperand
 }
 
 func (this *KeyValue) Name() string {
 	return this.name
 }
 func (this *KeyValue) Value() (*Value, error) {
-	return this.value.Value()
+	return (*this.value).Value()
 }
 
 type Object struct {
@@ -81,4 +86,22 @@ func (this *Object) Value() (*Value, error) {
 	}
 	return &Value{value: dic, _type: Type.Object}, nil
 
+}
+
+type Block struct {
+	lines []*IOperand
+}
+
+func (this *Block) Value() (*Value, error) {
+	var result *Value
+	var line IOperand
+	var _error error
+	for i := 0; i < len(this.lines); i++ {
+		line = *this.lines[i]
+		result, _error = line.Value()
+		if _error != nil {
+			return nil, _error
+		}
+	}
+	return result, nil
 }

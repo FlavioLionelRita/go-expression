@@ -50,12 +50,12 @@ func (this *ParserManager) AddOperator(key string, value interface{}) {
 	this.operators[key] = value
 }
 
-func (this *ParserManager) newOperator(key string, oper1 *IOperand, oper2 *IOperand) IOperator {
+func (this *ParserManager) newOperator(key string, oper1 *IOperand, oper2 *IOperand) interface{} {
 	template := this.operators[key].(IOperator)
 	clone := helper.Clone(template).(IOperator)
 	clone.SetOper1(*oper1)
 	clone.SetOper2(*oper2)
-	return clone
+	return &clone
 	// clone := reflect.New(reflect.ValueOf(template).Elem().Type()).Interface().(IOperator)
 	// clone.SetName(template.Name())
 	// clone.SetCategory(template.Category())
@@ -67,21 +67,21 @@ func (this *ParserManager) priority(key string) byte {
 	return this.operators[key].(IOperator).Priority()
 }
 
-func (this *ParserManager) setContext(operand IOperand, context *Context) {
+func (this *ParserManager) setContext(operand *IOperand, context *Context) {
 	//TODO
 }
 
-func (this *ParserManager) Parse(source string) (IOperand, error) {
+func (this *ParserManager) Parse(source string) (*IOperand, error) {
 	parser := NewParser(this, source)
 	operand, err := parser.Parse()
 	if err != nil {
 		return nil, err
 	}
-	return operand, nil
+	return operand.(*IOperand), nil
 }
-func (this *ParserManager) Eval(operand IOperand, context *Context) (interface{}, error) {
+func (this *ParserManager) Eval(operand *IOperand, context *Context) (interface{}, error) {
 	this.setContext(operand, context)
-	result, err := operand.Value()
+	result, err := (*operand).Value()
 	if err != nil {
 		return nil, err
 	}
