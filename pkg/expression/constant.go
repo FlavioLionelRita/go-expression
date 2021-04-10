@@ -1,11 +1,9 @@
 package expression
 
 type Constant struct {
-	value interface{}
-	_type byte
-	Operand
+	value *Value
 }
 
 func (this *Constant) Value() (*Value, error) {
-	return &Value{value: this.value, _type: this._type}, nil
+	return this.value, nil
 }

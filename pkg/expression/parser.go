@@ -33,7 +33,7 @@ func (this *Parser) Parse() (interface{}, error) {
 		if operand == nil {
 			break
 		}
-		operands = append(operands, operand.(*IOperand))
+		operands = append(operands, operand)
 	}
 	if len(operands) == 1 {
 		return operands[0], nil
@@ -75,8 +75,8 @@ func (this *Parser) end() bool {
 	return this.index >= this.length
 }
 
-func (this *Parser) getExpression(operand1 *IOperand, operator string, _break string) (interface{}, error) {
-	var expression *IOperand
+func (this *Parser) getExpression(operand1 *IOperand, operator string, _break string) (*IOperand, error) {
+	var expression IOperand
 	var operand2 *IOperand
 	var _error error
 	isbreak := false
@@ -88,7 +88,7 @@ func (this *Parser) getExpression(operand1 *IOperand, operator string, _break st
 			}
 			operator = this.getOperator()
 			if operator == "" || strings.Contains(_break, operator) {
-				expression = operand1
+				expression = *operand1
 				isbreak = true
 				break
 			}
@@ -98,28 +98,30 @@ func (this *Parser) getExpression(operand1 *IOperand, operator string, _break st
 			}
 			nextOperator := this.getOperator()
 			if nextOperator == "" || strings.Contains(_break, nextOperator) {
-				expression = this.manager.newOperator(operator, operand1, operand2).(*IOperand)
+				expression = this.manager.newOperator(operator, operand1, operand2).(IOperand)
 				isbreak = true
 				break
 			} else if this.priority(operator) >= this.priority(nextOperator) {
-				operand1 = this.manager.newOperator(operator, operand1, operand2).(*IOperand)
+				_operator := this.manager.newOperator(operator, operand1, operand2)
+				_operand := _operator.(IOperand)
+				operand1 = &_operand
 				operator = nextOperator
 			} else {
 				newOperand, _error := this.getExpression(operand2, nextOperator, _break)
 				if _error != nil {
 					return nil, _error
 				}
-				expression = this.manager.newOperator(operator, operand1, newOperand.(*IOperand)).(*IOperand)
+				expression = this.manager.newOperator(operator, operand1, newOperand).(IOperand)
 				isbreak = true
 				break
 			}
 		}
 		if !isbreak {
-			expression = this.manager.newOperator(operator, operand1, operand2).(*IOperand)
+			expression = this.manager.newOperator(operator, operand1, operand2).(IOperand)
 		}
 		// if all the operands are constant, reduce the expression a constant
 		if expression != nil {
-			p, hasOperands := (*expression).(IComposite)
+			p, hasOperands := (expression).(IComposite)
 			if hasOperands {
 				allConstants := true
 				for i := 0; i < len(p.operands()); i++ {
@@ -130,19 +132,62 @@ func (this *Parser) getExpression(operand1 *IOperand, operator string, _break st
 					}
 				}
 				if allConstants {
-					value, _error := (*expression).Value()
+					value, _error := (expression).Value()
 					if _error != nil {
 						return nil, _error
 					}
-					return &Constant{value: value.value, _type: value._type}, nil
+					_operand := (Constant{value: value})
+					expression = _operand.(IOperand)
 				}
 			}
 		}
-		return expression, nil
+		return &expression, nil
 	}
 	return nil, nil
 }
 func (this *Parser) getOperand() (*IOperand, error) {
+	var isNegative, isNot, isBitNot bool
+	var operand IOperand
+	var value string
+	char := this.current()
+	if char == '-' {
+		isNegative = true
+		this.index++
+		char = this.current()
+	} else if char == '~' {
+		isBitNot = true
+		this.index++
+		char = this.current()
+	} else if char == '!' {
+		isNot = true
+		this.index++
+		char = this.current()
+	}
+
+	if this.manager.isAlphanumeric(string([]byte{char})) {
+		value = this.getValue()
+		if !this.end() && this.current() == '(' {
+			this.index++
+			args, _error := this.getArgs(')')
+			if _error != nil {
+				return nil, _error
+			}
+			if strings.Contains(value, ".") {
+
+			} else {
+				operand = &Function{name: value, operands: args, isChild: false}
+			}
+		} else if !!this.end() && this.current() == '[' {
+			this.index++
+			index, _error := this.getExpression(nil, "", "]")
+			if _error != nil {
+				return nil, _error
+			}
+			variable := Variable{name: value}
+			operand = &IndexDecorator{variable: &(variable.(IOperand)), index: index}
+		}
+	}
+
 	//TODO
 	return nil, nil
 }
@@ -152,7 +197,7 @@ func (this *Parser) priority(op string) byte {
 func (this *Parser) getValue() string {
 	buff := make([]byte, 50)
 	j := 0
-	for ; !this.end() && this.manager.reAlphanumeric.Match([]byte{this.current()}); j++ {
+	for ; !this.end() && this.manager.isAlphanumeric(string([]byte{this.current()})); j++ {
 		if j >= 50 {
 			buff = append(buff, this.current())
 		} else {
@@ -208,7 +253,7 @@ func (this *Parser) getArgs(end byte) ([]*IOperand, error) {
 			return nil, _error
 		}
 		if arg != nil {
-			args = append(args, arg.(*IOperand))
+			args = append(args, arg)
 		}
 		if this.previous() == end {
 			break
@@ -216,7 +261,7 @@ func (this *Parser) getArgs(end byte) ([]*IOperand, error) {
 	}
 	return args, nil
 }
-func (this *Parser) getObject(end byte) (*Object, error) {
+func (this *Parser) getObject(end byte) (*_Object, error) {
 	var attributes []*KeyValue
 	for !this.end() {
 		name := this.getValue()
@@ -229,12 +274,12 @@ func (this *Parser) getObject(end byte) (*Object, error) {
 		if _error != nil {
 			return nil, _error
 		}
-		attribute := KeyValue{name: name, value: value.(*IOperand)}
+		attribute := KeyValue{name: name, value: value}
 		attributes = append(attributes, &attribute)
 		if this.previous() == end {
 			this.index++
 			break
 		}
 	}
-	return &Object{attributes: attributes}, nil
+	return &_Object{attributes: attributes}, nil
 }

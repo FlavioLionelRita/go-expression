@@ -1,12 +1,19 @@
 package expression
 
+import (
+	"reflect"
+)
+
 type Variable struct {
 	name    string
 	context Context
 }
 
-func (p *Variable) Value() interface{} {
-	return p.context.Value(p.name)
+func (p *Variable) Value() (*Value, error) {
+	_value := p.context.Value(p.name)
+	rvalue := reflect.ValueOf(_value)
+	return ReflecValueToValue(rvalue), nil
+
 }
 func (p *Variable) SetValue(value interface{}) {
 	p.context.SetValue(p.name, value)

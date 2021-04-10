@@ -2,7 +2,6 @@ package expression
 
 import (
 	"errors"
-	helper "main/pkg/helper"
 )
 
 type Addition struct {
@@ -27,16 +26,16 @@ func (this *Addition) Value() (*Value, error) {
 	if err != nil {
 		return nil, err
 	}
-	_type := helper.Max(oper1.Type(), oper2.Type())
-	switch _type {
-	case Type.Int:
-		return &Value{value: oper1.toInt() - oper2.toInt(), _type: _type}, nil
-	case Type.Float:
-		return &Value{value: oper1.toFloat() - oper2.toFloat(), _type: _type}, nil
-	case Type.String:
-		return &Value{value: oper1.toString() + oper2.toString(), _type: _type}, nil
-	case Type.Bool:
-		return &Value{value: oper1.toBool() && oper2.toBool(), _type: _type}, nil
+	kind := oper1.kind.Max(oper2.kind)
+	switch kind {
+	case Int:
+		return &Value{value: oper1.ToInt() - oper2.ToInt(), kind: kind}, nil
+	case Float:
+		return &Value{value: oper1.ToFloat() - oper2.ToFloat(), kind: kind}, nil
+	case String:
+		return &Value{value: oper1.ToString() + oper2.ToString(), kind: kind}, nil
+	case Bool:
+		return &Value{value: oper1.ToBool() && oper2.ToBool(), kind: kind}, nil
 	default:
 		return nil, errors.New("invalid type for operator " + this.name)
 	}
@@ -55,12 +54,13 @@ func (this *Subtraction) Value() (*Value, error) {
 	if err != nil {
 		return nil, err
 	}
-	_type := helper.Max(oper1.Type(), oper2.Type())
-	switch _type {
-	case Type.Int:
-		return &Value{value: oper1.toInt() - oper2.toInt(), _type: _type}, nil
-	case Type.Float:
-		return &Value{value: oper1.toFloat() - oper2.toFloat(), _type: _type}, nil
+
+	kind := oper1.kind.Max(oper2.kind)
+	switch kind {
+	case Int:
+		return &Value{value: oper1.ToInt() - oper2.ToInt(), kind: kind}, nil
+	case Float:
+		return &Value{value: oper1.ToFloat() - oper2.ToFloat(), kind: kind}, nil
 	default:
 		return nil, errors.New("invalid type for operator " + this.name)
 	}
